@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: inpe-ingestor
+  cloud:
+    openfeign:
+      client:
+        config:
+          inpe:
+            connectTimeout: 5000
+            readTimeout: 15000
+
+server:
+  port: 8083
+
+spaceguard:
+  base-url: "${SPACEGUARD_URL:http://localhost:8080}"
+  usuario: "${SPACEGUARD_USER:seu-email@exemplo.com}"
+  senha: "${SPACEGUARD_PASS:sua-senha}"
+
+inpe:
+  base-url: "${INPE_URL:https://terrabrasilis.dpi.inpe.br}"
+  type-name: "ams1h:active-fire-today"
+  max-features: 20
