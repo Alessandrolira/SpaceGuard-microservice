@@ -1,0 +1,458 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-06-07T13:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v9.0.0",
+  "resources": [
+    {
+      "_id": "wrk_spaceguard_prod",
+      "_type": "workspace",
+      "name": "SpaceGuard + Ingestor — PRODUÇÃO (Azure)",
+      "description": "Collection da API SpaceGuard em PRODUÇÃO (Azure ACI). Use o ambiente 'Producao (Azure)'."
+    },
+    {
+      "_id": "env_spaceguard_prod",
+      "parentId": "wrk_spaceguard_prod",
+      "_type": "environment",
+      "name": "Producao (Azure)",
+      "data": {
+        "base_url": "http://spaceguard-rm560512.eastus2.azurecontainer.io:8080",
+        "ingestor_url": "http://spaceguard-rm560512.eastus2.azurecontainer.io:8083",
+        "token": ""
+      }
+    },
+
+    {
+      "_id": "fld_auth_prod",
+      "parentId": "wrk_spaceguard_prod",
+      "_type": "request_group",
+      "name": "01 - Auth / Usuário",
+      "metaSortKey": -100
+    },
+    {
+      "_id": "req_auth_register_prod",
+      "parentId": "fld_auth_prod",
+      "_type": "request",
+      "method": "POST",
+      "url": "{{ base_url }}/auth/register",
+      "name": "Registrar Usuário",
+      "description": "Público. Cria um novo usuário (CreateUserDTO).",
+      "metaSortKey": -100,
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nomeUsuario\": \"Alessandro\",\n  \"telefone\": \"11999999999\",\n  \"email\": \"alessandrolira09@gmail.com\",\n  \"senha\": \"UMADTOl2#ale\"\n}"
+      }
+    },
+    {
+      "_id": "req_auth_login_prod",
+      "parentId": "fld_auth_prod",
+      "_type": "request",
+      "method": "POST",
+      "url": "{{ base_url }}/auth/login",
+      "name": "Login (pegar token)",
+      "description": "Público. Retorna { token }. Copie o valor para a variável de ambiente 'token'.",
+      "metaSortKey": -90,
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"alessandrolira09@gmail.com\",\n  \"senha\": \"UMADTOl2#ale\"\n}"
+      }
+    },
+    {
+      "_id": "req_auth_me_prod",
+      "parentId": "fld_auth_prod",
+      "_type": "request",
+      "method": "GET",
+      "url": "{{ base_url }}/auth/me",
+      "name": "Meu Usuário (/me)",
+      "metaSortKey": -80,
+      "authentication": { "type": "bearer", "token": "{{ token }}" }
+    },
+    {
+      "_id": "req_auth_list_prod",
+      "parentId": "fld_auth_prod",
+      "_type": "request",
+      "method": "GET",
+      "url": "{{ base_url }}/auth",
+      "name": "Listar Usuários",
+      "metaSortKey": -70,
+      "authentication": { "type": "bearer", "token": "{{ token }}" }
+    },
+    {
+      "_id": "req_auth_get_prod",
+      "parentId": "fld_auth_prod",
+      "_type": "request",
+      "method": "GET",
+      "url": "{{ base_url }}/auth/COLE_O_ID_USUARIO",
+      "name": "Buscar Usuário por ID",
+      "metaSortKey": -60,
+      "authentication": { "type": "bearer", "token": "{{ token }}" }
+    },
+    {
+      "_id": "req_auth_put_prod",
+      "parentId": "fld_auth_prod",
+      "_type": "request",
+      "method": "PUT",
+      "url": "{{ base_url }}/auth/COLE_O_ID_USUARIO",
+      "name": "Atualizar Usuário (PUT)",
+      "description": "ModifyUserDTO (todos os campos). role: ADMIN | USER.",
+      "metaSortKey": -50,
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "authentication": { "type": "bearer", "token": "{{ token }}" },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nomeUsuario\": \"Alessandro Lira\",\n  \"telefone\": \"11988887777\",\n  \"email\": \"alessandrolira09@gmail.com\",\n  \"senha\": \"UMADTOl2#ale\",\n  \"role\": \"ADMIN\"\n}"
+      }
+    },
+    {
+      "_id": "req_auth_patch_prod",
+      "parentId": "fld_auth_prod",
+      "_type": "request",
+      "method": "PATCH",
+      "url": "{{ base_url }}/auth/COLE_O_ID_USUARIO",
+      "name": "Atualizar Usuário (PATCH)",
+      "description": "ModifyUserPatchDTO (campos opcionais).",
+      "metaSortKey": -40,
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "authentication": { "type": "bearer", "token": "{{ token }}" },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"telefone\": \"11900001111\"\n}"
+      }
+    },
+    {
+      "_id": "req_auth_delete_prod",
+      "parentId": "fld_auth_prod",
+      "_type": "request",
+      "method": "DELETE",
+      "url": "{{ base_url }}/auth/COLE_O_ID_USUARIO",
+      "name": "Deletar Usuário",
+      "metaSortKey": -30,
+      "authentication": { "type": "bearer", "token": "{{ token }}" }
+    },
+
+    {
+      "_id": "fld_risco_prod",
+      "parentId": "wrk_spaceguard_prod",
+      "_type": "request_group",
+      "name": "02 - Risco",
+      "metaSortKey": -90
+    },
+    {
+      "_id": "req_risco_create_prod",
+      "parentId": "fld_risco_prod",
+      "_type": "request",
+      "method": "POST",
+      "url": "{{ base_url }}/risco",
+      "name": "Criar Risco",
+      "description": "RiscoDTO. nivelRisco: ALTO | MEDIO | BAIXO.",
+      "metaSortKey": -100,
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "authentication": { "type": "bearer", "token": "{{ token }}" },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nivelRisco\": \"ALTO\",\n  \"pontuacao\": 70\n}"
+      }
+    },
+    {
+      "_id": "req_risco_list_prod",
+      "parentId": "fld_risco_prod",
+      "_type": "request",
+      "method": "GET",
+      "url": "{{ base_url }}/risco",
+      "name": "Listar Riscos",
+      "metaSortKey": -90,
+      "authentication": { "type": "bearer", "token": "{{ token }}" }
+    },
+    {
+      "_id": "req_risco_get_prod",
+      "parentId": "fld_risco_prod",
+      "_type": "request",
+      "method": "GET",
+      "url": "{{ base_url }}/risco/COLE_O_ID_RISCO",
+      "name": "Buscar Risco por ID",
+      "metaSortKey": -80,
+      "authentication": { "type": "bearer", "token": "{{ token }}" }
+    },
+    {
+      "_id": "req_risco_put_prod",
+      "parentId": "fld_risco_prod",
+      "_type": "request",
+      "method": "PUT",
+      "url": "{{ base_url }}/risco/COLE_O_ID_RISCO",
+      "name": "Atualizar Risco",
+      "metaSortKey": -70,
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "authentication": { "type": "bearer", "token": "{{ token }}" },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nivelRisco\": \"MEDIO\",\n  \"pontuacao\": 55\n}"
+      }
+    },
+    {
+      "_id": "req_risco_delete_prod",
+      "parentId": "fld_risco_prod",
+      "_type": "request",
+      "method": "DELETE",
+      "url": "{{ base_url }}/risco/COLE_O_ID_RISCO",
+      "name": "Deletar Risco",
+      "metaSortKey": -60,
+      "authentication": { "type": "bearer", "token": "{{ token }}" }
+    },
+
+    {
+      "_id": "fld_foco_prod",
+      "parentId": "wrk_spaceguard_prod",
+      "_type": "request_group",
+      "name": "03 - Foco de Incêndio",
+      "metaSortKey": -80
+    },
+    {
+      "_id": "req_foco_create_prod",
+      "parentId": "fld_foco_prod",
+      "_type": "request",
+      "method": "POST",
+      "url": "{{ base_url }}/foco-incendio",
+      "name": "Criar Foco",
+      "description": "FocoIncendioDTO. Precisa de um idRisco válido (crie um Risco antes).",
+      "metaSortKey": -100,
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "authentication": { "type": "bearer", "token": "{{ token }}" },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"latitude\": -11.5309,\n  \"longitude\": -52.7887,\n  \"dataDeteccao\": \"2026-06-07\",\n  \"riscoFogo\": 0.85,\n  \"bioma\": \"Amazônia\",\n  \"municipio\": \"São Félix do Araguaia\",\n  \"estado\": null,\n  \"focoAtivo\": true,\n  \"idRisco\": \"COLE_O_ID_RISCO\"\n}"
+      }
+    },
+    {
+      "_id": "req_foco_list_prod",
+      "parentId": "fld_foco_prod",
+      "_type": "request",
+      "method": "GET",
+      "url": "{{ base_url }}/foco-incendio",
+      "name": "Listar Focos",
+      "metaSortKey": -90,
+      "authentication": { "type": "bearer", "token": "{{ token }}" }
+    },
+    {
+      "_id": "req_foco_get_prod",
+      "parentId": "fld_foco_prod",
+      "_type": "request",
+      "method": "GET",
+      "url": "{{ base_url }}/foco-incendio/COLE_O_ID_FOCO",
+      "name": "Buscar Foco por ID",
+      "metaSortKey": -80,
+      "authentication": { "type": "bearer", "token": "{{ token }}" }
+    },
+    {
+      "_id": "req_foco_put_prod",
+      "parentId": "fld_foco_prod",
+      "_type": "request",
+      "method": "PUT",
+      "url": "{{ base_url }}/foco-incendio/COLE_O_ID_FOCO",
+      "name": "Atualizar Foco",
+      "metaSortKey": -70,
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "authentication": { "type": "bearer", "token": "{{ token }}" },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"latitude\": -11.5686,\n  \"longitude\": -52.8057,\n  \"dataDeteccao\": \"2026-06-07\",\n  \"riscoFogo\": 0.60,\n  \"bioma\": \"Cerrado\",\n  \"municipio\": \"São Félix do Araguaia\",\n  \"estado\": null,\n  \"focoAtivo\": true,\n  \"idRisco\": \"COLE_O_ID_RISCO\"\n}"
+      }
+    },
+    {
+      "_id": "req_foco_delete_prod",
+      "parentId": "fld_foco_prod",
+      "_type": "request",
+      "method": "DELETE",
+      "url": "{{ base_url }}/foco-incendio/COLE_O_ID_FOCO",
+      "name": "Deletar Foco",
+      "metaSortKey": -60,
+      "authentication": { "type": "bearer", "token": "{{ token }}" }
+    },
+
+    {
+      "_id": "fld_alerta_prod",
+      "parentId": "wrk_spaceguard_prod",
+      "_type": "request_group",
+      "name": "04 - Alerta",
+      "metaSortKey": -70
+    },
+    {
+      "_id": "req_alerta_create_prod",
+      "parentId": "fld_alerta_prod",
+      "_type": "request",
+      "method": "POST",
+      "url": "{{ base_url }}/alerta",
+      "name": "Criar Alerta",
+      "description": "AlertaDTO. Precisa de idUsuario e idFoco válidos.",
+      "metaSortKey": -100,
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "authentication": { "type": "bearer", "token": "{{ token }}" },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"tituloAlerta\": \"Foco próximo\",\n  \"msgAlerta\": \"Há um foco de incêndio a 5km do seu local\",\n  \"distancia\": 5.2,\n  \"dataEmissao\": \"2026-06-07\",\n  \"dataExpir\": \"2026-06-10\",\n  \"idUsuario\": \"COLE_O_ID_USUARIO\",\n  \"idFoco\": \"COLE_O_ID_FOCO\"\n}"
+      }
+    },
+    {
+      "_id": "req_alerta_list_prod",
+      "parentId": "fld_alerta_prod",
+      "_type": "request",
+      "method": "GET",
+      "url": "{{ base_url }}/alerta",
+      "name": "Listar Alertas",
+      "metaSortKey": -90,
+      "authentication": { "type": "bearer", "token": "{{ token }}" }
+    },
+    {
+      "_id": "req_alerta_get_prod",
+      "parentId": "fld_alerta_prod",
+      "_type": "request",
+      "method": "GET",
+      "url": "{{ base_url }}/alerta/COLE_O_ID_ALERTA",
+      "name": "Buscar Alerta por ID",
+      "metaSortKey": -80,
+      "authentication": { "type": "bearer", "token": "{{ token }}" }
+    },
+    {
+      "_id": "req_alerta_put_prod",
+      "parentId": "fld_alerta_prod",
+      "_type": "request",
+      "method": "PUT",
+      "url": "{{ base_url }}/alerta/COLE_O_ID_ALERTA",
+      "name": "Atualizar Alerta",
+      "metaSortKey": -70,
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "authentication": { "type": "bearer", "token": "{{ token }}" },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"tituloAlerta\": \"Foco próximo (atualizado)\",\n  \"msgAlerta\": \"Distância reavaliada\",\n  \"distancia\": 3.8,\n  \"dataEmissao\": \"2026-06-07\",\n  \"dataExpir\": \"2026-06-12\",\n  \"idUsuario\": \"COLE_O_ID_USUARIO\",\n  \"idFoco\": \"COLE_O_ID_FOCO\"\n}"
+      }
+    },
+    {
+      "_id": "req_alerta_delete_prod",
+      "parentId": "fld_alerta_prod",
+      "_type": "request",
+      "method": "DELETE",
+      "url": "{{ base_url }}/alerta/COLE_O_ID_ALERTA",
+      "name": "Deletar Alerta",
+      "metaSortKey": -60,
+      "authentication": { "type": "bearer", "token": "{{ token }}" }
+    },
+
+    {
+      "_id": "fld_local_prod",
+      "parentId": "wrk_spaceguard_prod",
+      "_type": "request_group",
+      "name": "05 - Local Usuário",
+      "metaSortKey": -60
+    },
+    {
+      "_id": "req_local_create_prod",
+      "parentId": "fld_local_prod",
+      "_type": "request",
+      "method": "POST",
+      "url": "{{ base_url }}/local-usuario",
+      "name": "Adicionar Local",
+      "description": "AdicionarLocalDTO (idUsuario, latitude, longitude).",
+      "metaSortKey": -100,
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "authentication": { "type": "bearer", "token": "{{ token }}" },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"idUsuario\": \"COLE_O_ID_USUARIO\",\n  \"latitude\": -23.5505,\n  \"longitude\": -46.6333\n}"
+      }
+    },
+    {
+      "_id": "req_local_by_user_prod",
+      "parentId": "fld_local_prod",
+      "_type": "request",
+      "method": "GET",
+      "url": "{{ base_url }}/local-usuario/usuario/COLE_O_ID_USUARIO",
+      "name": "Buscar Locais do Usuário",
+      "metaSortKey": -90,
+      "authentication": { "type": "bearer", "token": "{{ token }}" }
+    },
+    {
+      "_id": "req_local_ultimo_prod",
+      "parentId": "fld_local_prod",
+      "_type": "request",
+      "method": "GET",
+      "url": "{{ base_url }}/local-usuario/ultimoLocal/usuario/COLE_O_ID_USUARIO",
+      "name": "Último Local do Usuário",
+      "metaSortKey": -80,
+      "authentication": { "type": "bearer", "token": "{{ token }}" }
+    },
+    {
+      "_id": "req_local_delete_prod",
+      "parentId": "fld_local_prod",
+      "_type": "request",
+      "method": "DELETE",
+      "url": "{{ base_url }}/local-usuario/COLE_O_ID_LOCAL",
+      "name": "Deletar Local",
+      "metaSortKey": -70,
+      "authentication": { "type": "bearer", "token": "{{ token }}" }
+    },
+
+    {
+      "_id": "fld_ingestor_prod",
+      "parentId": "wrk_spaceguard_prod",
+      "_type": "request_group",
+      "name": "06 - INPE Ingestor (microsserviço)",
+      "metaSortKey": -50
+    },
+    {
+      "_id": "req_ingestor_importar_prod",
+      "parentId": "fld_ingestor_prod",
+      "_type": "request",
+      "method": "POST",
+      "url": "{{ ingestor_url }}/importar",
+      "name": "Importar focos do INPE",
+      "description": "Dispara a importação: baixa o CSV do INPE, estima valores, cria Risco por bioma e insere os focos no spaceguard (via Feign). Sem body. O ingestor faz o login sozinho (credenciais nas variáveis de ambiente do ACI).",
+      "metaSortKey": -100
+    },
+
+    {
+      "_id": "fld_chat_prod",
+      "parentId": "wrk_spaceguard_prod",
+      "_type": "request_group",
+      "name": "07 - Chat (IA / Spring AI)",
+      "metaSortKey": -45
+    },
+    {
+      "_id": "req_chat_prod",
+      "parentId": "fld_chat_prod",
+      "_type": "request",
+      "method": "POST",
+      "url": "{{ base_url }}/chat",
+      "name": "Perguntar ao assistente",
+      "description": "Pergunta ao assistente de IA (Spring AI). Usa os focos do banco como contexto. Protegido por JWT.",
+      "metaSortKey": -100,
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "authentication": { "type": "bearer", "token": "{{ token }}" },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"message\": \"Quais biomas têm mais focos e qual o nível de risco predominante?\"\n}"
+      }
+    },
+
+    {
+      "_id": "req_versao_prod",
+      "parentId": "wrk_spaceguard_prod",
+      "_type": "request",
+      "method": "GET",
+      "url": "{{ base_url }}/versao",
+      "name": "Versão (endpoint da alteração do vídeo)",
+      "description": "Endpoint público adicionado na demonstração de alteração de código publicada em nuvem.",
+      "metaSortKey": -42
+    },
+    {
+      "_id": "req_swagger_prod",
+      "parentId": "wrk_spaceguard_prod",
+      "_type": "request",
+      "method": "GET",
+      "url": "{{ base_url }}/swagger-ui.html",
+      "name": "Swagger UI",
+      "metaSortKey": -40
+    }
+  ]
+}

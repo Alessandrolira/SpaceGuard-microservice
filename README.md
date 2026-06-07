@@ -242,7 +242,7 @@ Pipelines) e **Azure** (ACR + ACI). Toda a infraestrutura é provisionada por
 **scripts Azure CLI**.
 
 ### Desenho da arquitetura
-![Arquitetura](docs/arquitetura.svg)
+![Arquitetura](docs/spaceguard-arquitetura.drawio.png)
 
 Tudo roda como **containers** num único **Container Group (ACI)**, com as imagens
 guardadas no **Azure Container Registry (ACR)**. Como os containers do grupo

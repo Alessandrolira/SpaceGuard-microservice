@@ -124,7 +124,7 @@ Ao fim da Release, o log mostra a URL pública. Teste:
 ## 10) Roteiro do VÍDEO (siga na ordem — cada item omitido = −20 pts)
 Grave **contínuo, com narração por voz, 720p+, áudio claro** (sem legendas no lugar da fala):
 
-1. **README + arquitetura**: explique a solução, o conceito e o desenho (`docs/arquitetura.svg`).
+1. **README + arquitetura**: explique a solução, o conceito e o desenho (`docs/spaceguard-arquitetura.drawio.png`).
 2. **Portal Azure**: mostre os recursos criados pelos scripts (RG, ACR, Container Group).
 3. **Boards**: crie uma **nova Task** ao vivo.
 4. **Branch + alteração de código**: crie uma branch, faça uma alteração **em código-fonte de verdade**
@@ -160,6 +160,33 @@ Inclua: folha de rosto (grupo, **RM + nome completo** de cada integrante),
 | `azure-pipeline.yml` | raiz |
 | CRUD em JSON | `crud-json/` + README |
 | Variáveis de ambiente / segredos | Variable group + `application.yaml` (sem segredos hardcoded) |
-| Desenho da arquitetura | `docs/arquitetura.svg` |
+| Desenho da arquitetura | `docs/spaceguard-arquitetura.drawio.png` |
 | Banco em container | container `postgres` no ACI |
 | Deploy em container | Container Group (ACI) a partir do ACR |
+
+---
+
+## Custos / economizar créditos (Azure for Students)
+
+O **Container Group (ACI)** só cobra vCPU/memória enquanto está **`Running`**.
+Estimativa: ~US$ 3–4/dia ligado 24/7 (+ ~US$ 5/mês do ACR Basic). Como o crédito
+de estudante é US$ 100, **não deixe ligado à toa**.
+
+**Parar quando não estiver usando (não cobra compute):**
+```bash
+az container stop -g rg-spaceguard-rm560512 -n aci-spaceguard-rm560512
+```
+**Ligar antes de gravar / apresentar (~1-2 min):**
+```bash
+az container start -g rg-spaceguard-rm560512 -n aci-spaceguard-rm560512
+```
+> O banco é efêmero (sem volume): ao ligar de novo ou a cada deploy da pipeline,
+> ele volta vazio. Registre o usuário e crie os dados na hora (é o fluxo do vídeo).
+
+**Depois de tudo entregue E apresentado, apagar para zerar o custo:**
+```bash
+az group delete -n rg-spaceguard-rm560512 --yes
+```
+
+Rotina sugerida: pare o container ao terminar de testar → ligue para gravar o vídeo
+→ pare de novo → ligue antes da apresentação presencial → apague no fim de tudo.
