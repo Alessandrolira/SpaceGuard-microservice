@@ -59,7 +59,7 @@ envsubst < aci-deployment.template.yaml > aci-deployment.yaml
 echo "==> (3/3) Criando/atualizando o Container Group (${ACI_NAME})"
 # recria do zero para garantir que pega as imagens novas
 az container delete -g "${RESOURCE_GROUP}" -n "${ACI_NAME}" --yes 2>/dev/null || true
-az container create -g "${RESOURCE_GROUP}" -f aci-deployment.yaml --output table
+az container create -g "${RESOURCE_GROUP}" -f aci-deployment.yaml --output none
 
 FQDN="$(az container show -g "${RESOURCE_GROUP}" -n "${ACI_NAME}" \
   --query ipAddress.fqdn -o tsv | tr -d '\r')"

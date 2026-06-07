@@ -182,7 +182,7 @@ stages:
 
                     # Recria o grupo para garantir uso das imagens novas
                     az container delete -g "$(resourceGroup)" -n "$(aciName)" --yes 2>/dev/null || true
-                    az container create -g "$(resourceGroup)" -f scripts/aci-deployment.yaml --output table
+                    az container create -g "$(resourceGroup)" -f scripts/aci-deployment.yaml --output none
 
                     FQDN="$(az container show -g "$(resourceGroup)" -n "$(aciName)" --query ipAddress.fqdn -o tsv)"
                     echo "##[section]Deploy concluido!"
