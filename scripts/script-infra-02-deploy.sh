@@ -24,9 +24,8 @@ source ./script-infra-00-variaveis.sh
 REPO_ROOT="$(cd .. && pwd)"
 
 # ---- Validacao minima de segredos ----
-if [[ -z "${DB_PASSWORD}" || -z "${JWT_SECRET}" || -z "${SPACEGUARD_PASS}" ]]; then
-  echo "ERRO: defina DB_PASSWORD, JWT_SECRET e SPACEGUARD_PASS antes de rodar."
-  echo "Ex.: export DB_PASSWORD='...'; export JWT_SECRET='...'; export SPACEGUARD_PASS='...'"
+if [[ -z "${DB_URL}" || -z "${DB_USERNAME}" || -z "${DB_PASSWORD}" || -z "${JWT_SECRET}" || -z "${SPACEGUARD_PASS}" ]]; then
+  echo "ERRO: defina DB_URL, DB_USERNAME, DB_PASSWORD, JWT_SECRET e SPACEGUARD_PASS antes de rodar."
   exit 1
 fi
 
@@ -41,8 +40,6 @@ ACR_PASS="$(az acr credential show -n "${ACR_NAME}" --query 'passwords[0].value'
 echo "${ACR_PASS}" | docker login "${ACR_LS}" -u "${ACR_USER}" --password-stdin
 (
   cd "${REPO_ROOT}"
-  docker build -t "${ACR_LS}/${IMG_DB}:${IMAGE_TAG}"        -f dockerfiles/postgres.Dockerfile .
-  docker push  "${ACR_LS}/${IMG_DB}:${IMAGE_TAG}"
   docker build -t "${ACR_LS}/${IMG_SPACEGUARD}:${IMAGE_TAG}" -f dockerfiles/spaceguard.Dockerfile .
   docker push  "${ACR_LS}/${IMG_SPACEGUARD}:${IMAGE_TAG}"
   docker build -t "${ACR_LS}/${IMG_INGESTOR}:${IMAGE_TAG}"   -f dockerfiles/inpe-ingestor.Dockerfile .

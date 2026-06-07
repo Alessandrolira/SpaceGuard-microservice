@@ -43,8 +43,7 @@ variables:
     value: 'spaceguard-rm560512'
 
   # ----- Nao-segredos da aplicacao -----
-  - name: dbUsername
-    value: 'spaceguard'
+  # (DB_URL, DB_USERNAME e DB_PASSWORD vem do grupo 'spaceguard-secrets')
   - name: spaceguardUser
     value: 'admin@spaceguard.com'
 
@@ -125,8 +124,6 @@ stages:
               set -euo pipefail
               az acr login -n "$(acrName)"
               ACR_LS="$(az acr show -n "$(acrName)" --query loginServer -o tsv)"
-              docker build -t "$ACR_LS/spaceguard-db:$(imageTag)"   -f dockerfiles/postgres.Dockerfile .
-              docker push  "$ACR_LS/spaceguard-db:$(imageTag)"
               docker build -t "$ACR_LS/spaceguard:$(imageTag)"      -f dockerfiles/spaceguard.Dockerfile .
               docker push  "$ACR_LS/spaceguard:$(imageTag)"
               docker build -t "$ACR_LS/inpe-ingestor:$(imageTag)"   -f dockerfiles/inpe-ingestor.Dockerfile .
@@ -168,10 +165,8 @@ stages:
                     export ACI_NAME="$(aciName)"
                     export DNS_LABEL="$(dnsLabel)"
                     export IMAGE_TAG="$(imageTag)"
-                    export IMG_DB="spaceguard-db"
                     export IMG_SPACEGUARD="spaceguard"
                     export IMG_INGESTOR="inpe-ingestor"
-                    export DB_USERNAME="$(dbUsername)"
                     export SPACEGUARD_USER="$(spaceguardUser)"
 
                     # Segredos vindos do grupo de variaveis (mapeados em env: abaixo)
@@ -189,8 +184,10 @@ stages:
                     echo "API spaceguard : http://${FQDN}:8080  (Swagger em /swagger-ui.html)"
                     echo "inpe-ingestor  : http://${FQDN}:8083  (POST /importar)"
                 env:
-                  # Segredos do grupo 'spaceguard-secrets' precisam ser mapeados
+                  # Variaveis do grupo 'spaceguard-secrets' precisam ser mapeadas
                   # explicitamente para virarem variaveis de ambiente do script.
+                  DB_URL: $(DB_URL)
+                  DB_USERNAME: $(DB_USERNAME)
                   DB_PASSWORD: $(DB_PASSWORD)
                   JWT_SECRET: $(JWT_SECRET)
                   SPACEGUARD_PASS: $(SPACEGUARD_PASS)

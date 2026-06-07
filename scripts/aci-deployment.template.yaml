@@ -5,13 +5,14 @@
 # solucao. As variaveis ${...} sao substituidas (envsubst) no momento
 # do deploy, gerando o arquivo final "aci-deployment.yaml".
 #
-# Todos os containers compartilham a mesma rede (localhost), entao:
-#   - spaceguard fala com o postgres via  localhost:5432
+# Os containers compartilham a mesma rede (localhost), entao:
 #   - spaceguard/ingestor falam com o rabbitmq via localhost:5672
 #   - inpe-ingestor fala com o spaceguard via localhost:8080
+#   - spaceguard fala com o BANCO via ${DB_URL} (Azure Database for
+#     PostgreSQL - PaaS, persistente, fora do container group)
 #
 # Somente as portas 8080 (API) e 8083 (ingestor) sao expostas na
-# internet. O banco (5432) e o rabbitmq (5672) ficam internos.
+# internet. O rabbitmq (5672) fica interno.
 # =====================================================================
 apiVersion: 2019-12-01
 location: ${LOCATION}
@@ -33,24 +34,6 @@ properties:
       - protocol: tcp
         port: 8083
   containers:
-    # ---------------- Banco de dados (PostgreSQL) ----------------
-    - name: postgres
-      properties:
-        image: ${ACR_LOGIN_SERVER}/${IMG_DB}:${IMAGE_TAG}
-        resources:
-          requests:
-            cpu: 0.5
-            memoryInGB: 0.5
-        environmentVariables:
-          - name: POSTGRES_DB
-            value: spaceguard
-          - name: POSTGRES_USER
-            value: "${DB_USERNAME}"
-          - name: POSTGRES_PASSWORD
-            secureValue: "${DB_PASSWORD}"
-        ports:
-          - port: 5432
-
     # ---------------- Mensageria (RabbitMQ) ----------------
     - name: rabbitmq
       properties:
@@ -72,7 +55,7 @@ properties:
             memoryInGB: 1.5
         environmentVariables:
           - name: DB_URL
-            value: jdbc:postgresql://localhost:5432/spaceguard
+            value: "${DB_URL}"
           - name: DB_USERNAME
             value: "${DB_USERNAME}"
           - name: DB_PASSWORD

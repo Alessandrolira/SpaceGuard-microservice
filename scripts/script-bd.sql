@@ -8,9 +8,10 @@
 -- Os nomes de coluna seguem a estrategia de nomenclatura padrao do
 -- Spring Boot (camelCase -> snake_case). Ex.: nomeUsuario -> nome_usuario.
 --
--- Este arquivo e copiado para /docker-entrypoint-initdb.d/ na imagem
--- Postgres (dockerfiles/postgres.Dockerfile), entao o banco executa o DDL
--- automaticamente na primeira inicializacao do container.
+-- O banco e o Azure Database for PostgreSQL (PaaS). Rode este script UMA vez
+-- contra o servidor para criar o schema, por exemplo:
+--   psql "host=SEU-HOST.postgres.database.azure.com port=5432 dbname=NOME \
+--         user=usuario@nomeservidor sslmode=require" -f scripts/script-bd.sql
 -- =====================================================================
 
 -- ---------------------------------------------------------------------

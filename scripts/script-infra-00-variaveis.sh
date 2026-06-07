@@ -24,16 +24,18 @@ export IMAGE_TAG="${IMAGE_TAG:-latest}"
 # ---- Nomes das imagens dentro do ACR ----
 export IMG_SPACEGUARD="spaceguard"
 export IMG_INGESTOR="inpe-ingestor"
-export IMG_DB="spaceguard-db"
 
 # ---- Segredos da aplicacao (NUNCA versionar valores reais) ----
 # Defina-os no seu terminal ANTES de rodar o deploy, por exemplo:
+#   export DB_URL='jdbc:postgresql://SEU-HOST.postgres.database.azure.com:5432/NOME?sslmode=require'
+#   export DB_USERNAME='usuario@nomeservidor'   (Single Server usa user@servidor)
 #   export DB_PASSWORD='UmaSenhaForte123'
 #   export JWT_SECRET='chave-base64-com-32+caracteres'
 #   export SPACEGUARD_USER='seu-email@exemplo.com'
 #   export SPACEGUARD_PASS='senha-do-usuario-da-api'
 #   export OPENAI_API_KEY='sk-...'   (pode ser 'desativado' se nao usar o chat)
-export DB_USERNAME="${DB_USERNAME:-spaceguard}"
+export DB_URL="${DB_URL:-}"
+export DB_USERNAME="${DB_USERNAME:-}"
 export DB_PASSWORD="${DB_PASSWORD:-}"
 export JWT_SECRET="${JWT_SECRET:-}"
 export SPACEGUARD_USER="${SPACEGUARD_USER:-admin@spaceguard.com}"

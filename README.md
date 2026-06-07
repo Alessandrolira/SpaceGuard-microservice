@@ -244,17 +244,17 @@ Pipelines) e **Azure** (ACR + ACI). Toda a infraestrutura é provisionada por
 ### Desenho da arquitetura
 ![Arquitetura](docs/spaceguard-arquitetura.drawio.png)
 
-Tudo roda como **containers** num único **Container Group (ACI)**, com as imagens
-guardadas no **Azure Container Registry (ACR)**. Como os containers do grupo
-compartilham `localhost`, a comunicação interna (app→banco, app→fila,
-ingestor→app) funciona igual ao ambiente local:
+Os microsserviços rodam como **containers** num único **Container Group (ACI)**,
+com as imagens guardadas no **Azure Container Registry (ACR)**. O **banco de dados**
+é o **Azure Database for PostgreSQL (PaaS)** — gerenciado e **persistente** (não é
+recriado a cada deploy). A API se conecta a ele por SSL.
 
-| Container | Porta | Exposição | Papel |
+| Componente | Porta | Tipo | Papel |
 |---|---|---|---|
-| `spaceguard` | 8080 | pública | API REST + JWT |
-| `inpe-ingestor` | 8083 | pública | ingestão do INPE |
-| `postgres` | 5432 | interna | banco (schema via `script-bd.sql`) |
-| `rabbitmq` | 5672 | interna | fila `focos.queue` |
+| `spaceguard` | 8080 | container (ACI) - público | API REST + JWT |
+| `inpe-ingestor` | 8083 | container (ACI) - público | ingestão do INPE |
+| `rabbitmq` | 5672 | container (ACI) - interno | fila `focos.queue` |
+| **PostgreSQL** | 5432 | **PaaS (Azure DB for PostgreSQL)** | banco persistente (schema em `script-bd.sql`) |
 
 ### Estrutura de arquivos DevOps
 | Caminho | Conteúdo |
@@ -262,7 +262,7 @@ ingestor→app) funciona igual ao ambiente local:
 | `scripts/script-infra-*.sh` | provisionamento via Azure CLI |
 | `scripts/script-bd.sql` | DDL das 5 tabelas |
 | `scripts/aci-deployment.template.yaml` | definição do Container Group |
-| `dockerfiles/*.Dockerfile` | imagens de spaceguard, inpe-ingestor e postgres |
+| `dockerfiles/*.Dockerfile` | imagens de spaceguard e inpe-ingestor |
 | `azure-pipeline.yml` | pipeline CI (build/testes/imagens) + CD (deploy) |
 | `crud-json/` | corpos JSON para os CRUDs |
 | `docs/GUIA-AZURE-DEVOPS.md` | passo a passo da entrega + roteiro do vídeo |
@@ -273,7 +273,7 @@ az login
 bash scripts/script-infra-01-base.sh      # Resource Group + ACR
 # o deploy do app é feito automaticamente pela pipeline de Release,
 # ou manualmente:
-export DB_PASSWORD=...  JWT_SECRET=...  SPACEGUARD_PASS=...
+export DB_URL=...  DB_USERNAME=...  DB_PASSWORD=...  JWT_SECRET=...  SPACEGUARD_PASS=...
 bash scripts/script-infra-02-deploy.sh
 ```
 

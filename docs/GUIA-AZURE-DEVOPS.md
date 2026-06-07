@@ -134,13 +134,14 @@ Grave **contínuo, com narração por voz, 720p+, áudio claro** (sem legendas n
 7. **Artefatos**: destaque o artefato **pacote** (JARs) e os **testes JUnit** publicados.
 8. **App em nuvem**: mostre a alteração do passo 4 publicada e funcionando na URL pública.
 9. **CRUD (2 tabelas)**: faça **Create, Read, Update, Delete** em `risco` e `foco_incendio`
-   (use os JSONs de `crud-json/`). **Comprove no banco com SELECT** (não use GET — penalidade 15):
-   ```bash
-   # abrir psql dentro do container do banco:
-   az container exec -g rg-spaceguard-rm560512 -n aci-spaceguard-rm560512 \
-     --container-name postgres --exec-command "psql -U spaceguard -d spaceguard"
-   # depois:  SELECT * FROM risco;   SELECT * FROM foco_incendio;
+   (use os JSONs de `crud-json/`). **Comprove no banco com SELECT** (não use GET — penalidade 15).
+   O banco é o **Azure Database for PostgreSQL** — conecte com seu cliente
+   (pgAdmin / DBeaver / psql) e rode:
+   ```sql
+   SELECT * FROM risco;
+   SELECT * FROM foco_incendio;
    ```
+   Exemplo com psql: `psql "host=SEU-HOST.postgres.database.azure.com port=5432 dbname=NOME user=usuario@nomeservidor sslmode=require"`
 10. **Encerramento**: mostre a Task concluída com os links (commits, PR, etc.).
 
 ---
@@ -161,7 +162,7 @@ Inclua: folha de rosto (grupo, **RM + nome completo** de cada integrante),
 | CRUD em JSON | `crud-json/` + README |
 | Variáveis de ambiente / segredos | Variable group + `application.yaml` (sem segredos hardcoded) |
 | Desenho da arquitetura | `docs/spaceguard-arquitetura.drawio.png` |
-| Banco em container | container `postgres` no ACI |
+| Banco de dados | Azure Database for PostgreSQL (PaaS, persistente) |
 | Deploy em container | Container Group (ACI) a partir do ACR |
 
 ---
@@ -180,8 +181,9 @@ az container stop -g rg-spaceguard-rm560512 -n aci-spaceguard-rm560512
 ```bash
 az container start -g rg-spaceguard-rm560512 -n aci-spaceguard-rm560512
 ```
-> O banco é efêmero (sem volume): ao ligar de novo ou a cada deploy da pipeline,
-> ele volta vazio. Registre o usuário e crie os dados na hora (é o fluxo do vídeo).
+> O banco (Azure Database for PostgreSQL - PaaS) é **persistente**: os dados
+> sobrevivem a stop/start do container e aos deploys da pipeline. Só o RabbitMQ
+> e os apps são efêmeros (sobem prontos das imagens).
 
 **Depois de tudo entregue E apresentado, apagar para zerar o custo:**
 ```bash
