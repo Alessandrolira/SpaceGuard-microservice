@@ -1,8 +1,8 @@
 package com.example.inpe_ingestor.service;
 
-import com.example.inpe_ingestor.client.FocoClient;
 import com.example.inpe_ingestor.client.InpeClient;
 import com.example.inpe_ingestor.client.RiscoClient;
+import com.example.inpe_ingestor.config.RabbitConfig;
 import com.example.inpe_ingestor.dto.FocoIncendioRequest;
 import com.example.inpe_ingestor.dto.RiscoRequest;
 import com.example.inpe_ingestor.dto.RiscoResponse;
@@ -11,6 +11,7 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +30,7 @@ import java.util.Map;
  *   <li>parseia cada linha (commons-csv) extraindo geom, data, bioma, município;</li>
  *   <li>estima frp/brightness/confidence (EstimadorService);</li>
  *   <li>cria um Risco por bioma no spaceguard (RiscoClient) e guarda o idRisco;</li>
- *   <li>envia cada foco para o spaceguard (FocoClient).</li>
+ *   <li>publica cada foco na fila do RabbitMQ (o spaceguard consome e grava).</li>
  * </ol>
  */
 @Service
@@ -39,7 +40,7 @@ public class ImportacaoService {
 
     private final InpeClient inpeClient;
     private final RiscoClient riscoClient;
-    private final FocoClient focoClient;
+    private final RabbitTemplate rabbitTemplate;
     private final EstimadorService estimador;
 
     private final String typeName;
@@ -47,13 +48,13 @@ public class ImportacaoService {
 
     public ImportacaoService(InpeClient inpeClient,
                              RiscoClient riscoClient,
-                             FocoClient focoClient,
+                             RabbitTemplate rabbitTemplate,
                              EstimadorService estimador,
                              @Value("${inpe.type-name}") String typeName,
                              @Value("${inpe.max-features}") int maxFeatures) {
         this.inpeClient = inpeClient;
         this.riscoClient = riscoClient;
-        this.focoClient = focoClient;
+        this.rabbitTemplate = rabbitTemplate;
         this.estimador = estimador;
         this.typeName = typeName;
         this.maxFeatures = maxFeatures;
@@ -73,7 +74,7 @@ public class ImportacaoService {
         }
 
         Map<String, String> riscoPorBioma = new HashMap<>();
-        int enviados = 0;
+        int publicados = 0;
         int ignorados = 0;
 
         CSVFormat formato = CSVFormat.DEFAULT.builder()
@@ -111,16 +112,18 @@ public class ImportacaoService {
                         idRisco
                 );
 
-                focoClient.criarFoco(foco);
-                enviados++;
+                // Publica na fila em vez de chamar o spaceguard direto: responde rápido
+                // e o spaceguard grava no banco no ritmo dele (consumer).
+                rabbitTemplate.convertAndSend(RabbitConfig.FILA_FOCOS, foco);
+                publicados++;
             }
         } catch (IOException e) {
             throw new RuntimeException("Falha ao parsear o CSV do INPE", e);
         }
 
-        log.info("Importação concluída: {} focos enviados, {} ignorados, {} riscos criados",
-                enviados, ignorados, riscoPorBioma.size());
-        return new ImportacaoResultado(enviados, ignorados, riscoPorBioma);
+        log.info("Importação concluída: {} focos publicados na fila, {} ignorados, {} riscos criados",
+                publicados, ignorados, riscoPorBioma.size());
+        return new ImportacaoResultado(publicados, ignorados, riscoPorBioma);
     }
 
     /** Cria no spaceguard um Risco com nível/pontuação derivados do bioma e devolve o idRisco. */

@@ -1,6 +1,8 @@
 spring:
   application:
     name: inpe-ingestor
+  rabbitmq:
+    addresses: "${RABBITMQ_URL}"
   cloud:
     openfeign:
       client:
