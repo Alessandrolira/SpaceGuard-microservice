@@ -27,6 +27,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/auth/register", "/auth/login").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers("/versao").permitAll()
                         .requestMatchers("/teste").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
