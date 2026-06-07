@@ -1,0 +1,109 @@
+# =====================================================================
+# aci-deployment.template.yaml
+# ---------------------------------------------------------------------
+# Template do Container Group do Azure (ACI) com os 4 containers da
+# solucao. As variaveis ${...} sao substituidas (envsubst) no momento
+# do deploy, gerando o arquivo final "aci-deployment.yaml".
+#
+# Todos os containers compartilham a mesma rede (localhost), entao:
+#   - spaceguard fala com o postgres via  localhost:5432
+#   - spaceguard/ingestor falam com o rabbitmq via localhost:5672
+#   - inpe-ingestor fala com o spaceguard via localhost:8080
+#
+# Somente as portas 8080 (API) e 8083 (ingestor) sao expostas na
+# internet. O banco (5432) e o rabbitmq (5672) ficam internos.
+# =====================================================================
+apiVersion: 2019-12-01
+location: ${LOCATION}
+name: ${ACI_NAME}
+type: Microsoft.ContainerInstance/containerGroups
+properties:
+  osType: Linux
+  restartPolicy: Always
+  imageRegistryCredentials:
+    - server: ${ACR_LOGIN_SERVER}
+      username: ${ACR_USERNAME}
+      password: ${ACR_PASSWORD}
+  ipAddress:
+    type: Public
+    dnsNameLabel: ${DNS_LABEL}
+    ports:
+      - protocol: tcp
+        port: 8080
+      - protocol: tcp
+        port: 8083
+  containers:
+    # ---------------- Banco de dados (PostgreSQL) ----------------
+    - name: postgres
+      properties:
+        image: ${ACR_LOGIN_SERVER}/${IMG_DB}:${IMAGE_TAG}
+        resources:
+          requests:
+            cpu: 0.5
+            memoryInGB: 0.5
+        environmentVariables:
+          - name: POSTGRES_DB
+            value: spaceguard
+          - name: POSTGRES_USER
+            value: "${DB_USERNAME}"
+          - name: POSTGRES_PASSWORD
+            secureValue: "${DB_PASSWORD}"
+        ports:
+          - port: 5432
+
+    # ---------------- Mensageria (RabbitMQ) ----------------
+    - name: rabbitmq
+      properties:
+        image: rabbitmq:3.13-management
+        resources:
+          requests:
+            cpu: 0.5
+            memoryInGB: 0.5
+        ports:
+          - port: 5672
+
+    # ---------------- API REST (spaceguard) ----------------
+    - name: spaceguard
+      properties:
+        image: ${ACR_LOGIN_SERVER}/${IMG_SPACEGUARD}:${IMAGE_TAG}
+        resources:
+          requests:
+            cpu: 1.0
+            memoryInGB: 1.5
+        environmentVariables:
+          - name: DB_URL
+            value: jdbc:postgresql://localhost:5432/spaceguard
+          - name: DB_USERNAME
+            value: "${DB_USERNAME}"
+          - name: DB_PASSWORD
+            secureValue: "${DB_PASSWORD}"
+          - name: JWT_SECRET
+            secureValue: "${JWT_SECRET}"
+          - name: JWT_EXPIRATION_MINUTES
+            value: "60"
+          - name: RABBITMQ_URL
+            value: amqp://guest:guest@localhost:5672
+          - name: OPENAI_API_KEY
+            secureValue: "${OPENAI_API_KEY}"
+        ports:
+          - port: 8080
+
+    # ---------------- Ingestao INPE (inpe-ingestor) ----------------
+    - name: inpe-ingestor
+      properties:
+        image: ${ACR_LOGIN_SERVER}/${IMG_INGESTOR}:${IMAGE_TAG}
+        resources:
+          requests:
+            cpu: 0.5
+            memoryInGB: 1.0
+        environmentVariables:
+          - name: SPACEGUARD_URL
+            value: http://localhost:8080
+          - name: SPACEGUARD_USER
+            secureValue: "${SPACEGUARD_USER}"
+          - name: SPACEGUARD_PASS
+            secureValue: "${SPACEGUARD_PASS}"
+          - name: RABBITMQ_URL
+            value: amqp://guest:guest@localhost:5672
+        ports:
+          - port: 8083

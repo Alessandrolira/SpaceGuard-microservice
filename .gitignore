@@ -7,3 +7,9 @@
 .env
 .env.local
 .env.*.local
+
+### Build Maven ###
+target/
+
+### Deploy ACI gerado (CONTEM SEGREDOS — nunca versionar) ###
+scripts/aci-deployment.yaml

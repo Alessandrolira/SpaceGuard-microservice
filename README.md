@@ -232,3 +232,104 @@ Ele já vem com:
 
 Fluxo: **Registrar Usuário → Login** (copie o `token` para a variável de ambiente) →
 demais requisições. Para a ingestão: **06 → Importar focos do INPE**.
+
+---
+
+## Deploy em Nuvem (DevOps — Azure)
+
+A solução é publicada **100% em nuvem** usando **Azure DevOps** (Boards, Repos,
+Pipelines) e **Azure** (ACR + ACI). Toda a infraestrutura é provisionada por
+**scripts Azure CLI**.
+
+### Desenho da arquitetura
+![Arquitetura](docs/arquitetura.svg)
+
+Tudo roda como **containers** num único **Container Group (ACI)**, com as imagens
+guardadas no **Azure Container Registry (ACR)**. Como os containers do grupo
+compartilham `localhost`, a comunicação interna (app→banco, app→fila,
+ingestor→app) funciona igual ao ambiente local:
+
+| Container | Porta | Exposição | Papel |
+|---|---|---|---|
+| `spaceguard` | 8080 | pública | API REST + JWT |
+| `inpe-ingestor` | 8083 | pública | ingestão do INPE |
+| `postgres` | 5432 | interna | banco (schema via `script-bd.sql`) |
+| `rabbitmq` | 5672 | interna | fila `focos.queue` |
+
+### Estrutura de arquivos DevOps
+| Caminho | Conteúdo |
+|---|---|
+| `scripts/script-infra-*.sh` | provisionamento via Azure CLI |
+| `scripts/script-bd.sql` | DDL das 5 tabelas |
+| `scripts/aci-deployment.template.yaml` | definição do Container Group |
+| `dockerfiles/*.Dockerfile` | imagens de spaceguard, inpe-ingestor e postgres |
+| `azure-pipeline.yml` | pipeline CI (build/testes/imagens) + CD (deploy) |
+| `crud-json/` | corpos JSON para os CRUDs |
+| `docs/GUIA-AZURE-DEVOPS.md` | passo a passo da entrega + roteiro do vídeo |
+
+### Como provisionar (resumo)
+```bash
+az login
+bash scripts/script-infra-01-base.sh      # Resource Group + ACR
+# o deploy do app é feito automaticamente pela pipeline de Release,
+# ou manualmente:
+export DB_PASSWORD=...  JWT_SECRET=...  SPACEGUARD_PASS=...
+bash scripts/script-infra-02-deploy.sh
+```
+
+> Passo a passo completo (Boards, branch protegida, convite do professor,
+> Service Connection, variáveis secretas e roteiro do vídeo) em
+> [`docs/GUIA-AZURE-DEVOPS.md`](docs/GUIA-AZURE-DEVOPS.md).
+
+### Segurança / variáveis de ambiente
+Nenhum segredo é versionado. Os `.env` estão no `.gitignore` e o `application.yaml`
+**não** tem segredos hardcoded (`DB_PASSWORD` e `JWT_SECRET` vêm só de variável de
+ambiente). Na nuvem, os segredos vêm do **Variable Group** `spaceguard-secrets` do
+Azure DevOps e são injetados como *secure environment variables* no ACI.
+
+---
+
+## CRUD em JSON (operações por tabela)
+
+Bodies prontos em [`crud-json/`](crud-json/). O CRUD é demonstrado em duas tabelas:
+**`risco`** e **`foco_incendio`** (foco depende de um risco).
+
+### Autenticação (obter o token)
+```http
+POST /auth/register        # body: crud-json/00-auth-register.json
+POST /auth/login           # body: crud-json/01-auth-login.json  -> retorna { "token": "..." }
+```
+Use o token nas demais chamadas: header `Authorization: Bearer <token>`.
+
+### Tabela `risco`
+```http
+POST   /risco              # CREATE  -> body: crud-json/risco-create.json
+GET    /risco              # READ    (lista)   |   GET /risco/{id}  (um)
+PUT    /risco/{id}         # UPDATE  -> body: crud-json/risco-update.json
+DELETE /risco/{id}         # DELETE
+```
+```json
+// CREATE  (crud-json/risco-create.json)
+{ "nivelRisco": "ALTO", "pontuacao": 65.0 }
+// UPDATE  (crud-json/risco-update.json)
+{ "nivelRisco": "MEDIO", "pontuacao": 42.5 }
+```
+
+### Tabela `foco_incendio`
+```http
+POST   /foco-incendio      # CREATE  -> body: crud-json/foco-create.json (use o idRisco criado acima)
+GET    /foco-incendio      # READ    (lista)   |   GET /foco-incendio/{id} (um)
+PUT    /foco-incendio/{id} # UPDATE  -> body: crud-json/foco-update.json
+DELETE /foco-incendio/{id} # DELETE
+```
+```json
+// CREATE  (crud-json/foco-create.json)
+{
+  "latitude": -3.465305, "longitude": -62.215649, "dataDeteccao": "2026-06-07",
+  "riscoFogo": 0.87, "bioma": "Amazônia", "municipio": "Manaus", "estado": "AM",
+  "focoAtivo": true, "idRisco": "COLE_AQUI_O_ID_DO_RISCO_CRIADO"
+}
+```
+
+> No vídeo, **comprove a persistência com `SELECT` direto no banco** (não use GET):
+> `SELECT * FROM risco;` e `SELECT * FROM foco_incendio;`

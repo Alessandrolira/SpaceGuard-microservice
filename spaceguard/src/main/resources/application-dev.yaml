@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: "${DB_URL:jdbc:postgresql://localhost:5432/spaceguard}"
+    username: "${DB_USERNAME:postgres}"
+    password: "${DB_PASSWORD:postgres}"
+
+security:
+  jwt:
+    secret: "${JWT_SECRET:sua-chave-secreta-com-pelo-menos-32-caracteres-para-jwt-HS256}"
+    expiration-minutes: "${JWT_EXPIRATION_MINUTES:60}"

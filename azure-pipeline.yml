@@ -1,0 +1,197 @@
+# =====================================================================
+# azure-pipeline.yml  —  Pipeline CI/CD do SpaceGuard (Azure DevOps)
+# =====================================================================
+# Estagio 1 (CI_Build):  builda e testa os 2 microsservicos, publica os
+#                        artefatos (JARs) e os resultados de teste (JUnit),
+#                        e builda/publica as imagens Docker no ACR.
+# Estagio 2 (CD_Release): faz o deploy automatico no Azure (ACI) usando
+#                         as imagens recem-publicadas. Roda somente apos
+#                         o CI_Build concluir com sucesso (gerar artefato).
+#
+# A pipeline dispara automaticamente a cada commit na branch "main"
+# (que so recebe commits via Merge de Pull Request, por politica de branch).
+# =====================================================================
+
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  # ----- Grupo de variaveis com os SEGREDOS (criar em Pipelines > Library) -----
+  #   spaceguard-secrets deve conter (marcados como secret):
+  #     DB_PASSWORD, JWT_SECRET, SPACEGUARD_PASS, OPENAI_API_KEY
+  - group: spaceguard-secrets
+
+  # ----- Service Connection (ARM) com a sua assinatura Azure -----
+  - name: azureServiceConnection
+    value: 'svc-azure-spaceguard'
+
+  # ----- Recursos de nuvem (devem casar com scripts/script-infra-00-variaveis.sh) -----
+  - name: resourceGroup
+    value: 'rg-spaceguard-rm560512'
+  - name: location
+    value: 'eastus2'
+  - name: acrName
+    value: 'acrspaceguardrm560512'
+  - name: aciName
+    value: 'aci-spaceguard-rm560512'
+  - name: dnsLabel
+    value: 'spaceguard-rm560512'
+
+  # ----- Nao-segredos da aplicacao -----
+  - name: dbUsername
+    value: 'spaceguard'
+  - name: spaceguardUser
+    value: 'admin@spaceguard.com'
+
+  # ----- Tag das imagens = numero do build (rastreabilidade) -----
+  - name: imageTag
+    value: '$(Build.BuildId)'
+
+stages:
+# =====================================================================
+# ESTAGIO 1 — CI (Build + Testes + Imagens)
+# =====================================================================
+- stage: CI_Build
+  displayName: 'CI - Build, Testes e Imagens'
+  jobs:
+    - job: build_test
+      displayName: 'Compilar, testar e publicar artefatos'
+      steps:
+        - task: JavaToolInstaller@0
+          displayName: 'Instalar JDK 21'
+          inputs:
+            versionSpec: '21'
+            jdkArchitectureOption: 'x64'
+            jdkSourceOption: 'PreInstalled'
+
+        # ----- Build + testes do spaceguard -----
+        - task: Maven@4
+          displayName: 'Maven build/test - spaceguard'
+          inputs:
+            mavenPomFile: 'spaceguard/pom.xml'
+            goals: 'clean package'
+            options: '-B'
+            publishJUnitResults: true
+            testResultsFiles: 'spaceguard/target/surefire-reports/TEST-*.xml'
+            testRunTitle: 'Testes spaceguard'
+            javaHomeOption: 'JDKVersion'
+            jdkVersionOption: 'default'
+
+        # ----- Build + testes do inpe-ingestor -----
+        - task: Maven@4
+          displayName: 'Maven build/test - inpe-ingestor'
+          inputs:
+            mavenPomFile: 'inpe-ingestor/pom.xml'
+            goals: 'clean package'
+            options: '-B'
+            publishJUnitResults: true
+            testResultsFiles: 'inpe-ingestor/target/surefire-reports/TEST-*.xml'
+            testRunTitle: 'Testes inpe-ingestor'
+            javaHomeOption: 'JDKVersion'
+            jdkVersionOption: 'default'
+
+        # ----- Junta os JARs gerados e publica como artefato "pacote" -----
+        - task: CopyFiles@2
+          displayName: 'Copiar JARs para staging'
+          inputs:
+            contents: |
+              spaceguard/target/*.jar
+              inpe-ingestor/target/*.jar
+            targetFolder: '$(Build.ArtifactStagingDirectory)'
+            flattenFolders: true
+
+        - task: PublishPipelineArtifact@1
+          displayName: 'Publicar artefato (pacote)'
+          inputs:
+            targetPath: '$(Build.ArtifactStagingDirectory)'
+            artifact: 'pacote'
+
+        # ----- Builda (Docker) e faz push das 3 imagens para o ACR -----
+        # Usa docker build + docker push (em vez de "az acr build"), pois ACR
+        # Tasks pode estar bloqueado na assinatura. O agente hospedado da
+        # Microsoft ja vem com Docker.
+        - task: AzureCLI@2
+          displayName: 'Build (Docker) e push das imagens no ACR'
+          inputs:
+            azureSubscription: '$(azureServiceConnection)'
+            scriptType: 'bash'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              set -euo pipefail
+              az acr login -n "$(acrName)"
+              ACR_LS="$(az acr show -n "$(acrName)" --query loginServer -o tsv)"
+              docker build -t "$ACR_LS/spaceguard-db:$(imageTag)"   -f dockerfiles/postgres.Dockerfile .
+              docker push  "$ACR_LS/spaceguard-db:$(imageTag)"
+              docker build -t "$ACR_LS/spaceguard:$(imageTag)"      -f dockerfiles/spaceguard.Dockerfile .
+              docker push  "$ACR_LS/spaceguard:$(imageTag)"
+              docker build -t "$ACR_LS/inpe-ingestor:$(imageTag)"   -f dockerfiles/inpe-ingestor.Dockerfile .
+              docker push  "$ACR_LS/inpe-ingestor:$(imageTag)"
+
+# =====================================================================
+# ESTAGIO 2 — CD / Release (Deploy automatico no ACI)
+# =====================================================================
+- stage: CD_Release
+  displayName: 'CD - Release (Deploy no Azure)'
+  dependsOn: CI_Build
+  condition: succeeded()
+  jobs:
+    - deployment: deploy_aci
+      displayName: 'Deploy do Container Group (ACI)'
+      environment: 'spaceguard-producao'
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - checkout: self
+
+              - task: AzureCLI@2
+                displayName: 'Provisionar/atualizar ACI a partir das imagens'
+                inputs:
+                  azureSubscription: '$(azureServiceConnection)'
+                  scriptType: 'bash'
+                  scriptLocation: 'inlineScript'
+                  inlineScript: |
+                    set -euo pipefail
+
+                    # Credenciais do ACR para o Container Group puxar as imagens
+                    export ACR_LOGIN_SERVER="$(az acr show -n "$(acrName)" --query loginServer -o tsv)"
+                    export ACR_USERNAME="$(az acr credential show -n "$(acrName)" --query username -o tsv)"
+                    export ACR_PASSWORD="$(az acr credential show -n "$(acrName)" --query 'passwords[0].value' -o tsv)"
+
+                    # Variaveis consumidas pelo template (envsubst)
+                    export LOCATION="$(location)"
+                    export ACI_NAME="$(aciName)"
+                    export DNS_LABEL="$(dnsLabel)"
+                    export IMAGE_TAG="$(imageTag)"
+                    export IMG_DB="spaceguard-db"
+                    export IMG_SPACEGUARD="spaceguard"
+                    export IMG_INGESTOR="inpe-ingestor"
+                    export DB_USERNAME="$(dbUsername)"
+                    export SPACEGUARD_USER="$(spaceguardUser)"
+
+                    # Segredos vindos do grupo de variaveis (mapeados em env: abaixo)
+                    envsubst < scripts/aci-deployment.template.yaml > scripts/aci-deployment.yaml
+
+                    echo "----- aci-deployment.yaml gerado (segredos ocultos) -----"
+                    grep -v -E 'secureValue|password' scripts/aci-deployment.yaml || true
+
+                    # Recria o grupo para garantir uso das imagens novas
+                    az container delete -g "$(resourceGroup)" -n "$(aciName)" --yes 2>/dev/null || true
+                    az container create -g "$(resourceGroup)" -f scripts/aci-deployment.yaml --output table
+
+                    FQDN="$(az container show -g "$(resourceGroup)" -n "$(aciName)" --query ipAddress.fqdn -o tsv)"
+                    echo "##[section]Deploy concluido!"
+                    echo "API spaceguard : http://${FQDN}:8080  (Swagger em /swagger-ui.html)"
+                    echo "inpe-ingestor  : http://${FQDN}:8083  (POST /importar)"
+                env:
+                  # Segredos do grupo 'spaceguard-secrets' precisam ser mapeados
+                  # explicitamente para virarem variaveis de ambiente do script.
+                  DB_PASSWORD: $(DB_PASSWORD)
+                  JWT_SECRET: $(JWT_SECRET)
+                  SPACEGUARD_PASS: $(SPACEGUARD_PASS)
+                  OPENAI_API_KEY: $(OPENAI_API_KEY)

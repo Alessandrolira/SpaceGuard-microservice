@@ -1,0 +1,11 @@
+{
+  "latitude": -3.465305,
+  "longitude": -62.215649,
+  "dataDeteccao": "2026-06-07",
+  "riscoFogo": 0.87,
+  "bioma": "Amazônia",
+  "municipio": "Manaus",
+  "estado": "AM",
+  "focoAtivo": true,
+  "idRisco": "COLE_AQUI_O_ID_DO_RISCO_CRIADO"
+}

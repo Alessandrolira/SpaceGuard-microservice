@@ -1,0 +1,8 @@
+# Reduz o contexto enviado ao "az acr build" / docker build
+**/target/
+**/.git/
+**/.idea/
+**/.env
+**/*.iml
+docs/
+*.md
