@@ -12,7 +12,7 @@ public class VersaoController {
     public Map<String, String> versao() {
         return Map.of(
                 "aplicacao", "SpaceGuard",
-                "versao", "3.0",
+                "versao", "4.0",
                 "mensagem", "Deploy automatizado via Azure DevOps CI/CD"
         );
     }
