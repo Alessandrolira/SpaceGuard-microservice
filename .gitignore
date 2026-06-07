@@ -2,3 +2,8 @@
 ./claude
 /.claude
 /claude
+
+### env (NUNCA commitar credenciais) — vale para qualquer subpasta ###
+.env
+.env.local
+.env.*.local
