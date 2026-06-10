@@ -289,6 +289,9 @@ Azure DevOps e são injetados como *secure environment variables* no ACI.
 
 ---
 
+## JSON PARA INSOMINIA
+em /spaceguard possui dois arquivos para importar dentro do insominia para testar os endpoints
+
 ## CRUD em JSON (operações por tabela)
 
 Bodies prontos em [`crud-json/`](crud-json/). O CRUD é demonstrado em duas tabelas:
