@@ -6,13 +6,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import tools.jackson.databind.json.JsonMapper;
 
-/**
- * Configuração do RabbitMQ no lado PRODUTOR.
- * <p>
- * Declara a fila de focos e o conversor JSON (Jackson 3) usado pelo RabbitTemplate
- * para serializar a mensagem. O Spring Boot injeta esse MessageConverter no
- * RabbitTemplate automaticamente.
- */
 @Configuration
 public class RabbitConfig {
 

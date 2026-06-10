@@ -6,13 +6,7 @@ import com.example.inpe_ingestor.dto.LoginResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-/**
- * Faz login no spaceguard uma única vez e mantém o token JWT em memória,
- * reutilizando-o em todas as chamadas seguintes.
- * <p>
- * Credenciais vêm do .env (SPACEGUARD_USER / SPACEGUARD_PASS), resolvidas
- * via application.yaml -> spaceguard.usuario / spaceguard.senha.
- */
+
 @Service
 public class TokenProvider {
 
@@ -30,7 +24,6 @@ public class TokenProvider {
         this.senha = senha;
     }
 
-    /** Retorna o token atual, fazendo login na primeira vez (ou após invalidar). */
     public String getToken() {
         String atual = token;
         if (atual == null) {
@@ -39,7 +32,6 @@ public class TokenProvider {
         return atual;
     }
 
-    /** Força um novo login. Útil para chamar quando uma requisição tomar 401. */
     public synchronized String login() {
         LoginResponse resp = authClient.login(new LoginRequest(usuario, senha));
         this.token = resp.token();

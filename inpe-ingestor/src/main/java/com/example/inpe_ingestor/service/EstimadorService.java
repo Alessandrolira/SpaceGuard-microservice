@@ -7,22 +7,9 @@ import java.math.RoundingMode;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-/**
- * Traduz para Java a heurística do amigo (api.py: _estimar_frp_brightness).
- * <p>
- * O CSV do INPE (camada active-fire-today) NÃO traz frp/brightness/confidence
- * nem nível de risco. O Python estima esses valores a partir do bioma e do mês
- * (sazonalidade da estação seca). Replicamos a mesma lógica aqui.
- * <p>
- * A parte de Machine Learning (RandomForest .pkl) que o amigo usa para o nível
- * de risco NÃO é portável para Java. Como a estratégia escolhida é "Risco por
- * bioma", derivamos o nível diretamente da tabela FRP_BASE — cada bioma já tem
- * um peso natural ali.
- */
 @Service
 public class EstimadorService {
 
-    /** Peso base de FRP por bioma (api.py:87). Também serve de ranking de risco. */
     private static final Map<String, Double> FRP_BASE = Map.of(
             "Amazônia", 55.0,
             "Cerrado", 65.0,
@@ -34,12 +21,6 @@ public class EstimadorService {
 
     private static final double FRP_PADRAO = 50.0;
 
-    /**
-     * Estima frp, brightness e confidence (api.py: _estimar_frp_brightness).
-     *
-     * @param bioma bioma do foco (ex.: "Amazônia")
-     * @param mes   mês 1..12 extraído do "viewed_at" do CSV
-     */
     public Estimativa estimar(String bioma, int mes) {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -64,12 +45,7 @@ public class EstimadorService {
         return new Estimativa(frp, brightness, confidence);
     }
 
-    /**
-     * Deriva o nível de risco do bioma a partir do peso em FRP_BASE.
-     * Pantanal/Cerrado (>=60) -> ALTO; Amazônia/Caatinga (>=40) -> MEDIO; resto -> BAIXO.
-     *
-     * @return "ALTO" | "MEDIO" | "BAIXO" (string compatível com o enum do spaceguard)
-     */
+
     public String nivelPorBioma(String bioma) {
         double base = FRP_BASE.getOrDefault(bioma, FRP_PADRAO);
         if (base >= 60) {
@@ -81,18 +57,12 @@ public class EstimadorService {
         return "BAIXO";
     }
 
-    /**
-     * Pontuação do Risco daquele bioma = o próprio peso base em FRP.
-     * Usado no corpo do POST /risco.
-     */
+
     public BigDecimal pontuacaoPorBioma(String bioma) {
         return BigDecimal.valueOf(FRP_BASE.getOrDefault(bioma, FRP_PADRAO));
     }
 
-    /**
-     * riscoFogo do foco no formato 0..1 (igual ao risco_fogo original do INPE),
-     * derivado do confidence estimado (50..95 -> 0.50..0.95).
-     */
+
     public BigDecimal riscoFogoDeConfidence(int confidence) {
         return BigDecimal.valueOf(confidence)
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);

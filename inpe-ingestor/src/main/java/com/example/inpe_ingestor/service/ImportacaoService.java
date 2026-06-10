@@ -23,16 +23,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Orquestra a importação ponta a ponta:
- * <ol>
- *   <li>baixa o CSV do INPE (InpeClient);</li>
- *   <li>parseia cada linha (commons-csv) extraindo geom, data, bioma, município;</li>
- *   <li>estima frp/brightness/confidence (EstimadorService);</li>
- *   <li>cria um Risco por bioma no spaceguard (RiscoClient) e guarda o idRisco;</li>
- *   <li>publica cada foco na fila do RabbitMQ (o spaceguard consome e grava).</li>
- * </ol>
- */
+
 @Service
 public class ImportacaoService {
 
@@ -126,7 +117,6 @@ public class ImportacaoService {
         return new ImportacaoResultado(publicados, ignorados, riscoPorBioma);
     }
 
-    /** Cria no spaceguard um Risco com nível/pontuação derivados do bioma e devolve o idRisco. */
     private String criarRiscoDoBioma(String bioma) {
         RiscoResponse resposta = riscoClient.criarRisco(new RiscoRequest(
                 estimador.nivelPorBioma(bioma),
@@ -136,7 +126,6 @@ public class ImportacaoService {
         return resposta.idRisco();
     }
 
-    /** Extrai [longitude, latitude] de uma string WKT "POINT (lon lat)". Retorna null se inválida. */
     private static BigDecimal[] parseGeom(String geom) {
         if (geom == null || geom.isBlank()) {
             return null;
@@ -158,7 +147,6 @@ public class ImportacaoService {
         }
     }
 
-    /** dataDeteccao a partir de "view_date"; cai para "viewed_at" e, por fim, para hoje. */
     private static LocalDate parseData(CSVRecord registro) {
         String viewDate = valor(registro, "view_date", null);
         if (viewDate != null) {
@@ -179,7 +167,6 @@ public class ImportacaoService {
         return LocalDate.now();
     }
 
-    /** Mês (1..12) a partir de "viewed_at"; usa a data já calculada como fallback. */
     private static int parseMes(CSVRecord registro, LocalDate fallback) {
         String viewedAt = valor(registro, "viewed_at", null);
         if (viewedAt != null) {
@@ -192,7 +179,6 @@ public class ImportacaoService {
         return fallback.getMonthValue();
     }
 
-    /** Lê uma coluna do registro com fallback se ausente/vazia. */
     private static String valor(CSVRecord registro, String coluna, String fallback) {
         if (!registro.isMapped(coluna)) {
             return fallback;
